@@ -126,7 +126,7 @@ def makeRGBImages(simulation, wavelengthTuples=None, *, fileType="total", fromPe
 #  as an astropy quantity with per-frequency surface brightness units (MJy/sr).
 #
 def makeConvolvedRGBImages(simulation, contributions, name="", *, fileType="total", decades=3,
-                           fmax=None, fmin=None, outDirPath=None):
+                           fmax=None, fmin=None, outDirPath=None, stretch='log'):
 
     # get the (instrument, output file path) tuples to be handled
     instr_paths = sm.instrumentOutFilePaths(simulation, fileType+".fits")
@@ -166,8 +166,23 @@ def makeConvolvedRGBImages(simulation, contributions, name="", *, fileType="tota
         # create an RGB file for each output file
         for (instrument, filepath), image in zip(instr_paths,images):
             image.setRange(fmin.value, fmax.value)
-            image.applyLog()
+            if stretch == "log":
+                image.applyLog()
+            elif stretch == "sqrt":
+                image.applySqrt()
+            else:
+                try:
+                    image.applyCustom(stretch)
+                except:
+                    print("Can't perform {} on image".format(stretch.__name__))
+                    return
+            if isinstance(stretch, str):
+                name += "_" + stretch
+            elif callable(stretch):
+                name += "_" + stretch.__name__
+            
             image.applyCurve()
+            name += "_dec{:.1f}".format(decades)
 
             # determine output file path
             saveFilePath = ut.savePath(filepath.with_name(filepath.stem+name+".png"), ".png", outDirPath=outDirPath)

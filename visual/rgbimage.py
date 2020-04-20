@@ -266,6 +266,17 @@ class RGBImage:
         return self._dbuf
 
     # ---------- Adjusting the image ----------------------------------
+    ## This function applies a given function to the pixel values of the image, and adjusts
+    # the pixel range accordingly. This function raises an error if the pixel range includes zero or negative
+    # values when this function is called. This can be avoided, for example, by calling the setrange()
+    # function with a nonzero minimum value before calling the applycustom() function.
+    def applyCustom(self, func):
+        self._ensureArr(invalidate=True)
+        # verify that all values are positive
+        if self._rangearr[0] <= 0: raise ValueError("Log can't be applied to negative or zero pixel values")
+        # apply logarithm to array values and range
+        self._darr = func(self._darr)
+        self._rangearr = (func(self._rangearr[0]), func(self._rangearr[1]))
 
     ## This function applies the natural logarithm function to the pixel values of the image, and adjusts
     # the pixel range accordingly. This function raises an error if the pixel range includes zero or negative
