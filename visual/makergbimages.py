@@ -126,20 +126,20 @@ def makeRGBImages(simulation, wavelengthTuples=None, *, fileType="total", fromPe
 #  as an astropy quantity with per-frequency surface brightness units (MJy/sr).
 #
 def makeConvolvedRGBImages(simulation, contributions, name="", *, fileType="total", decades=3,
-                           fmax=None, fmin=None, outDirPath=None, stretch='log'):
+                           fmax=None, fmin=None, outDirPath=None, stretch='log', return_fn=False):
 
     # get the (instrument, output file path) tuples to be handled
     instr_paths = sm.instrumentOutFilePaths(simulation, fileType+".fits")
     if len(instr_paths) > 0:
-        name = "" if not name else "_" + name
+        name0 = "" if not name else "_" + name
         sbunit = sm.unit("MJy/sr")
-
+        
         # construct an image object with integrated color channels for each output file
         # and keep track of the largest surface brightness value (in MJy/sr) in each of the images
         images = []
         fmaxes = []
         for instrument, filepath in instr_paths:
-            logging.info("Convolving for RGB image {}{}".format(filepath.stem, name))
+            logging.info("Convolving for RGB image {}{}".format(filepath.stem, name0))
 
             # get the data cube in its intrinsic units
             cube = sm.loadFits(filepath)
@@ -162,7 +162,8 @@ def makeConvolvedRGBImages(simulation, contributions, name="", *, fileType="tota
         # determine the appropriate pixel range for all output images
         fmax = max(fmaxes) if fmax is None else fmax << sbunit
         fmin = fmax/10**decades if fmin is None else fmin << sbunit
-
+        
+        if return_fn: fns=[]
         # create an RGB file for each output file
         for (instrument, filepath), image in zip(instr_paths,images):
             image.setRange(fmin.value, fmax.value)
@@ -176,10 +177,11 @@ def makeConvolvedRGBImages(simulation, contributions, name="", *, fileType="tota
                 except:
                     print("Can't perform {} on image".format(stretch.__name__))
                     return
+
             if isinstance(stretch, str):
-                name += "_" + stretch
+                name = name0 + "_" + stretch
             elif callable(stretch):
-                name += "_" + stretch.__name__
+                name = name0 + "_" + stretch.__name__
             
             image.applyCurve()
             name += "_dec{:.1f}".format(decades)
@@ -188,8 +190,12 @@ def makeConvolvedRGBImages(simulation, contributions, name="", *, fileType="tota
             saveFilePath = ut.savePath(filepath.with_name(filepath.stem+name+".png"), ".png", outDirPath=outDirPath)
             image.saveTo(saveFilePath)
             logging.info("Created convolved RGB image file {}".format(saveFilePath))
+            if return_fn: fns.append(saveFilePath)
 
         # return the surface brightness range used for these images
-        return fmin,fmax
+        if return_fn:
+            return fmin, fmax, fns
+        else:
+            return fmin,fmax
 
 # -----------------------------------------------------------------
