@@ -189,7 +189,7 @@ def makeConvolvedRGBImages(simulation, contributions, name="", *, fileType="tota
             saveFilePath = ut.savePath(filepath.with_name(filepath.stem+name+".png"), ".png", outDirPath=outDirPath)
             image.saveTo(saveFilePath)
             logging.info("Created convolved RGB image file {}".format(saveFilePath))
-            if return_fn: fns.append(saveFilePath)
+            #if return_fn: fns.append(saveFilePath)
 
         # return the surface brightness range used for these images
         
